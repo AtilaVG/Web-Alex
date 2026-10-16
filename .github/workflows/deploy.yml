@@ -46,8 +46,10 @@ jobs:
       - name: Compilar
         run: npm run build
         env:
-          SITE_URL: ${{ steps.pages.outputs.origin || format('https://{0}.github.io', github.repository_owner) }}
-          BASE_PATH: ${{ steps.pages.outputs.base_path || format('/{0}', github.event.repository.name) }}
+          # Con dominio propio o web de usuario, base_path viene vacío (raíz): por eso se
+          # mira si el paso salió bien y no si el valor está vacío.
+          SITE_URL: ${{ steps.pages.outcome == 'success' && steps.pages.outputs.origin || format('https://{0}.github.io', github.repository_owner) }}
+          BASE_PATH: ${{ steps.pages.outcome == 'success' && format('{0}/', steps.pages.outputs.base_path) || format('/{0}/', github.event.repository.name) }}
 
       - uses: actions/upload-pages-artifact@v4
         with:

@@ -1,63 +1,65 @@
 /**
  * Secuencia de fotogramas pintada en un <canvas> (vídeo controlado por el scroll).
  *
- * - El fotograma 1 ya está en la caché: es el póster (precargado en el <head>).
- * - El resto se pide en segundo plano, con prioridad baja, primero a saltos
- *   (1, 33, 65…, luego 17, 49…) para tener pronto fotogramas repartidos por
- *   todo el vídeo, y después rellenando huecos.
- * - Si el fotograma pedido aún no ha llegado, se pinta el más cercano cargado.
- * - Encuadre: a pantalla completa (cover); en pantallas verticales se reduce
- *   lo justo para que se vea el portátil (foco) y se funde arriba y abajo con
- *   el fondo, igual que el póster en CSS. `zoom` lleva de ese encuadre al cover.
+ * Descarga: el fotograma 1 ya está en la caché (es el póster, precargado en
+ * el <head>). El resto se pide en segundo plano con prioridad baja, 6 a la
+ * vez: primero repartidos por todo el vídeo (1, 120, 33, 65…, luego 17,
+ * 49…) y después rellenando huecos; si la persona salta a una zona que aún no
+ * ha llegado, esa zona pasa delante.
+ *
+ * Decodificación: los fotogramas se guardan comprimidos (Blob, ~10 KB) y solo
+ * se decodifican los cercanos al que se está viendo, con createImageBitmap
+ * (fuera del hilo principal). Así pintar es solo copiar píxeles y no hay
+ * tirones por decodificar WebP al hacer scroll. Si el pedido aún no está, se
+ * pinta el más cercano que sí lo esté.
+ *
+ * Encuadre: a pantalla completa (cover); en pantallas verticales se reduce lo
+ * justo para que se vea el portátil (foco) y se funde arriba y abajo con el
+ * fondo, igual que el póster en CSS. `zoom` lleva de ese encuadre al cover.
  */
 
 interface Opciones {
   canvas: HTMLCanvasElement;
   carpeta: string;
   total: number;
+  /** Tamaño de los fotogramas (para no dar al canvas más resolución de la que tienen). */
+  ancho: number;
+  alto: number;
   foco: number;
   fondo: string;
 }
 
-const PETICIONES_A_LA_VEZ = 6;
+const DESCARGAS_A_LA_VEZ = 6;
+const DECODIFICACIONES_A_LA_VEZ = 3;
+/** Fotogramas decodificados que se mantienen a cada lado del actual. */
+const VENTANA = 10;
 const BANDA = 0.18;
 
-export function crearSecuencia({ canvas, carpeta, total, foco, fondo }: Opciones) {
+export function crearSecuencia({ canvas, carpeta, total, ancho: iw, alto: ih, foco, fondo }: Opciones) {
   const ctx = canvas.getContext('2d', { alpha: false });
-  const imagenes: HTMLImageElement[] = [];
-  const listos = new Uint8Array(total);
+  const blobs: (Blob | undefined)[] = new Array(total);
+  const pedidos = new Uint8Array(total);
+  const mapas = new Map<number, ImageBitmap>();
+  const decodificando = new Set<number>();
   const fondoTransparente = transparente(fondo);
 
   let objetivo = 0;
+  let direccion = 1;
   let zoom = 0;
   let pintado = -1;
-  let zoomPintado = -1;
-  let ancho = 0;
-  let alto = 0;
-  let pedido = 0;
+  let escalaPintada = -1;
+  let anchoCanvas = 0;
+  let altoCanvas = 0;
+  let pedidoPintar = 0;
   let parado = false;
+  let cola: number[] = [];
 
   const ruta = (i: number) => `${carpeta}/f_${String(i + 1).padStart(3, '0')}.webp`;
+  const cerca = (i: number, margen = VENTANA) => Math.abs(i - objetivo) <= margen;
 
-  function cargar(i: number) {
-    return new Promise<void>((resolver) => {
-      const img = new Image();
-      img.decoding = 'async';
-      img.fetchPriority = i === 0 ? 'high' : 'low';
-      img.src = ruta(i);
-      imagenes[i] = img;
-      const listo = () => {
-        if (parado) return resolver();
-        listos[i] = 1;
-        // Solo hace falta repintar si este fotograma está más cerca del pedido que el pintado
-        if (pintado < 0 || Math.abs(i - objetivo) < Math.abs(pintado - objetivo)) pedirPintado();
-        resolver();
-      };
-      img.decode().then(listo, () => (img.complete && img.naturalWidth ? listo() : resolver()));
-    });
-  }
+  // ---- Descarga ----
 
-  /** Orden de carga: primero y último, luego a saltos cada vez más finos. */
+  /** Orden de descarga: primero y último, luego a saltos cada vez más finos. */
   function orden() {
     const visto = new Uint8Array(total);
     const lista: number[] = [];
@@ -75,77 +77,149 @@ export function crearSecuencia({ canvas, carpeta, total, foco, fondo }: Opciones
     return lista;
   }
 
-  async function precargar() {
-    const cola = orden();
-    // El primero va solo: es el póster y ya está en caché, así el canvas lo tapa cuanto antes
-    await cargar(cola.shift()!);
-    const trabajador = async () => {
-      while (cola.length && !parado) await cargar(cola.shift()!);
-    };
-    await Promise.all(Array.from({ length: PETICIONES_A_LA_VEZ }, trabajador));
-  }
-
-  function cercano(i: number) {
-    if (listos[i]) return i;
-    for (let d = 1; d < total; d++) {
-      if (i - d >= 0 && listos[i - d]) return i - d;
-      if (i + d < total && listos[i + d]) return i + d;
+  /** Siguiente fotograma a pedir: lo que falte junto al actual va primero. */
+  function siguiente() {
+    for (let d = 0; d <= VENTANA; d++) {
+      for (const i of [objetivo + d * direccion, objetivo - d * direccion]) {
+        if (i >= 0 && i < total && !pedidos[i]) return i;
+      }
+    }
+    while (cola.length) {
+      const i = cola.shift()!;
+      if (!pedidos[i]) return i;
     }
     return -1;
   }
 
+  async function descargar(i: number) {
+    pedidos[i] = 1;
+    try {
+      const respuesta = await fetch(ruta(i), { priority: i === 0 ? 'high' : 'low' } as RequestInit);
+      if (!respuesta.ok) return;
+      blobs[i] = await respuesta.blob();
+      if (!parado && cerca(i)) decodificar();
+    } catch {
+      // Sin red: se queda con los que haya y se pinta el más cercano
+    }
+  }
+
+  async function precargar() {
+    cola = orden();
+    await descargar(cola.shift()!);
+    const trabajador = async () => {
+      for (let i = siguiente(); i >= 0 && !parado; i = siguiente()) await descargar(i);
+    };
+    await Promise.all(Array.from({ length: DESCARGAS_A_LA_VEZ }, trabajador));
+  }
+
+  // ---- Decodificación (ventana alrededor del fotograma actual) ----
+
+  function decodificar() {
+    if (parado) return;
+    for (const [i, mapa] of mapas) {
+      if (!cerca(i, VENTANA + 2) && i !== pintado) {
+        mapa.close();
+        mapas.delete(i);
+      }
+    }
+    for (let d = 0; d <= VENTANA; d++) {
+      for (const i of [objetivo + d * direccion, objetivo - d * direccion]) {
+        if (decodificando.size >= DECODIFICACIONES_A_LA_VEZ) return;
+        if (i < 0 || i >= total || !blobs[i] || mapas.has(i) || decodificando.has(i)) continue;
+        decodificando.add(i);
+        createImageBitmap(blobs[i]!).then(
+          (mapa) => {
+            decodificando.delete(i);
+            if (parado || !cerca(i, VENTANA + 2)) {
+              mapa.close();
+            } else {
+              mapas.set(i, mapa);
+              // Solo hace falta repintar si este está más cerca del pedido que el pintado
+              if (pintado < 0 || Math.abs(i - objetivo) < Math.abs(pintado - objetivo)) pedirPintado();
+            }
+            decodificar();
+          },
+          () => {
+            decodificando.delete(i);
+            decodificar();
+          },
+        );
+      }
+    }
+  }
+
+  // ---- Pintado ----
+
+  function cercano(i: number) {
+    if (mapas.has(i)) return i;
+    for (let d = 1; d < total; d++) {
+      if (mapas.has(i - d)) return i - d;
+      if (mapas.has(i + d)) return i + d;
+    }
+    return -1;
+  }
+
+  /** Escala (en px de canvas por px de fotograma) para el zoom actual. */
+  function escalaPara(z: number, w: number, h: number) {
+    const cubrir = Math.max(w / iw, h / ih);
+    const encajar = Math.min(cubrir, w / (iw * foco));
+    return encajar + (cubrir - encajar) * z;
+  }
+
   function medir() {
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    ancho = Math.max(1, Math.round(canvas.clientWidth * ratio));
-    alto = Math.max(1, Math.round(canvas.clientHeight * ratio));
-    if (canvas.width !== ancho) canvas.width = ancho;
-    if (canvas.height !== alto) canvas.height = alto;
+    const anchoCss = Math.max(1, canvas.clientWidth);
+    const altoCss = Math.max(1, canvas.clientHeight);
+    // Más resolución que la del fotograma no añade detalle: solo más píxeles que mover
+    const maxUtil = 1 / escalaPara(0, anchoCss, altoCss);
+    const ratio = Math.min(window.devicePixelRatio || 1, 2, Math.max(1, maxUtil));
+    anchoCanvas = Math.round(anchoCss * ratio);
+    altoCanvas = Math.round(altoCss * ratio);
+    if (canvas.width !== anchoCanvas) canvas.width = anchoCanvas;
+    if (canvas.height !== altoCanvas) canvas.height = altoCanvas;
     pintado = -1;
     pedirPintado();
   }
 
   function pedirPintado() {
-    if (!pedido && !parado) pedido = requestAnimationFrame(pintar);
+    if (!pedidoPintar && !parado) pedidoPintar = requestAnimationFrame(pintar);
   }
 
   function pintar() {
-    pedido = 0;
+    pedidoPintar = 0;
     const n = cercano(objetivo);
     if (n < 0 || !ctx) return;
-    if (n === pintado && zoom === zoomPintado) return;
+    const escala = escalaPara(zoom, anchoCanvas, altoCanvas);
+    // En horizontal el zoom no cambia el encuadre: no hace falta repintar el mismo fotograma
+    if (n === pintado && Math.abs(escala - escalaPintada) < 1e-4) return;
 
-    const img = imagenes[n];
-    const iw = img.naturalWidth;
-    const ih = img.naturalHeight;
-    const cubrir = Math.max(ancho / iw, alto / ih);
-    const encajar = Math.min(cubrir, ancho / (iw * foco));
-    const escala = encajar + (cubrir - encajar) * zoom;
     const w = iw * escala;
     const h = ih * escala;
-    const x = (ancho - w) / 2;
-    const y = (alto - h) / 2;
+    const x = (anchoCanvas - w) / 2;
+    const y = (altoCanvas - h) / 2;
 
-    ctx.fillStyle = fondo;
-    ctx.fillRect(0, 0, ancho, alto);
-    ctx.drawImage(img, x, y, w, h);
+    if (w < anchoCanvas || h < altoCanvas) {
+      ctx.fillStyle = fondo;
+      ctx.fillRect(0, 0, anchoCanvas, altoCanvas);
+    }
+    ctx.drawImage(mapas.get(n)!, x, y, w, h);
 
     // Si el fotograma no llena el alto (pantalla vertical), se funde con el fondo
-    if (h < alto - 1) {
+    if (h < altoCanvas - 1) {
       const banda = h * BANDA;
       const arriba = ctx.createLinearGradient(0, y, 0, y + banda);
       arriba.addColorStop(0, fondo);
       arriba.addColorStop(1, fondoTransparente);
       ctx.fillStyle = arriba;
-      ctx.fillRect(0, y - 1, ancho, banda + 1);
+      ctx.fillRect(0, y - 1, anchoCanvas, banda + 1);
       const abajo = ctx.createLinearGradient(0, y + h - banda, 0, y + h);
       abajo.addColorStop(0, fondoTransparente);
       abajo.addColorStop(1, fondo);
       ctx.fillStyle = abajo;
-      ctx.fillRect(0, y + h - banda, ancho, banda + 1);
+      ctx.fillRect(0, y + h - banda, anchoCanvas, banda + 1);
     }
 
     pintado = n;
-    zoomPintado = zoom;
+    escalaPintada = escala;
     canvas.classList.add('is-listo');
   }
 
@@ -159,13 +233,19 @@ export function crearSecuencia({ canvas, carpeta, total, foco, fondo }: Opciones
       const i = Math.round(Math.min(1, Math.max(0, progreso)) * (total - 1));
       const z = Math.round(Math.min(1, Math.max(0, nuevoZoom)) * 1000) / 1000;
       if (i === objetivo && z === zoom) return;
-      objetivo = i;
+      if (i !== objetivo) {
+        direccion = i > objetivo ? 1 : -1;
+        objetivo = i;
+        decodificar();
+      }
       zoom = z;
       pedirPintado();
     },
     destruir() {
       parado = true;
-      if (pedido) cancelAnimationFrame(pedido);
+      if (pedidoPintar) cancelAnimationFrame(pedidoPintar);
+      for (const mapa of mapas.values()) mapa.close();
+      mapas.clear();
       canvas.classList.remove('is-listo');
     },
   };

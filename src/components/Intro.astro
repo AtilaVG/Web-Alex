@@ -67,8 +67,12 @@ const fases = [
         data-lienzo
         data-escritorio={url(esc.carpeta)}
         data-escritorio-total={esc.total}
+        data-escritorio-ancho={esc.ancho}
+        data-escritorio-alto={esc.alto}
         data-movil={url(mov.carpeta)}
         data-movil-total={mov.total}
+        data-movil-ancho={mov.ancho}
+        data-movil-alto={mov.alto}
         data-media-movil={mediaMovil}></canvas>
       <p class="aviso-ia" data-aviso-ia>
         <span class="aviso-ia-punto" aria-hidden="true"></span>
@@ -76,7 +80,7 @@ const fases = [
         <span class="solo-fijo">Imagen generada con IA</span>
       </p>
       <p class="desliza" aria-hidden="true" data-desliza>
-        Desliza para entrar
+        <span class="desliza-texto">Desliza para entrar</span>
         <span class="desliza-linea"></span>
       </p>
     </div>
@@ -108,20 +112,22 @@ const fases = [
           <a class="boton boton-secundario wf" data-wf="a" data-caja href="#contacto"><span class="wf-txt">Contacto</span></a>
         </div>
 
-        <figure class="foto wf wf-imagen" data-wf="img" data-caja>
-          <div class="foto-marco" data-foto>
-            <Picture
-              src={keyframeA}
-              formats={['avif', 'webp']}
-              widths={[480, 800, 1200]}
-              sizes="(min-width: 900px) 32vw, 92vw"
-              alt="Una lámpara de escritorio ámbar ilumina un portátil abierto en un estudio a oscuras"
-              loading="lazy"
-              decoding="async"
-              fetchpriority="low"
-            />
+        <figure class="foto">
+          <div class="foto-caja wf wf-imagen" data-wf="img" data-caja>
+            <div class="foto-marco" data-foto>
+              <Picture
+                src={keyframeA}
+                formats={['avif', 'webp']}
+                widths={[480, 800, 1200]}
+                sizes="(min-width: 900px) 32vw, 92vw"
+                alt="Una lámpara de escritorio ámbar ilumina un portátil abierto en un estudio a oscuras"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+              />
+            </div>
           </div>
-          <figcaption class="wf-txt">Imagen generada con IA</figcaption>
+          <figcaption>Imagen generada con IA</figcaption>
         </figure>
 
         <ul class="servicios" aria-label="Qué hago">

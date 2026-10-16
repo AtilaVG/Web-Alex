@@ -140,6 +140,7 @@ a {
   font-weight: 500;
   letter-spacing: -0.01em;
   text-decoration: none;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
 }
 
 .nav-guion {
@@ -171,6 +172,7 @@ a {
 .nav-enlaces .nav-saltar {
   min-height: 2.5rem;
   padding-inline: 0.85rem;
+  white-space: nowrap;
   border: 1px solid rgb(243 236 226 / 0.3);
   border-radius: 999px;
   background: rgb(3 8 11 / 0.45);
@@ -192,11 +194,16 @@ a {
 
 @media (max-width: 380px) {
   .nav-enlaces {
+    gap: 0.15rem;
     font-size: 0.8125rem;
   }
 
   .nav-enlaces .nav-saltar {
     padding-inline: 0.65rem;
+  }
+
+  .nav-enlaces .nav-saltar svg {
+    display: none;
   }
 }
 
@@ -226,11 +233,21 @@ a {
 
 .capa-video {
   position: relative;
-  height: 80svh;
-  min-height: 20rem;
+  height: 62svh;
+  min-height: 18rem;
   overflow: hidden;
-  background: var(--pantalla);
   container-type: size;
+}
+
+/* Velo oscuro arriba: la navegación se lee aunque la lámpara pase por detrás */
+.capa-video::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: 7.5rem;
+  background: linear-gradient(rgb(3 8 11 / 0.92), rgb(3 8 11 / 0.62) 55%, transparent);
+  pointer-events: none;
 }
 
 /* El póster y el canvas comparten encuadre: a pantalla completa en horizontal;
@@ -246,9 +263,14 @@ a {
   translate: -50% -50%;
 }
 
+/* Sin escena: la imagen se funde por abajo con la portada */
+.poster img {
+  mask-image: linear-gradient(to bottom, #000 60%, transparent);
+}
+
 @container (max-aspect-ratio: 8 / 9) {
   .poster img {
-    mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 60%, transparent);
   }
 }
 
@@ -294,6 +316,7 @@ a {
 .capa-portada {
   position: relative;
   display: grid;
+  grid-template-rows: minmax(0, 1fr);
   min-height: 100svh;
 }
 
@@ -309,7 +332,7 @@ a {
   pointer-events: none;
   opacity: var(--c);
   background:
-    radial-gradient(55% 60% at 4% 0%, rgb(255 181 71 / 0.16), transparent 72%),
+    radial-gradient(55% 60% at 4% 6%, rgb(255 181 71 / 0.16), transparent 72%),
     radial-gradient(40% 50% at 100% 100%, rgb(255 181 71 / 0.05), transparent 70%);
 }
 
@@ -346,8 +369,14 @@ a {
 }
 
 .nombre-caja {
+  --tam-nombre: clamp(4.5rem, min(31vw, 40svh), 22rem);
   position: relative;
-  --tam-nombre: clamp(4.5rem, min(31vw, 34svh), 20rem);
+  display: grid;
+  align-items: last baseline;
+}
+
+.nombre-caja > * {
+  grid-area: 1 / 1;
 }
 
 .nombre {
@@ -428,6 +457,11 @@ a {
   min-height: 0;
 }
 
+.foto-caja {
+  position: relative;
+  height: 100%;
+}
+
 .foto-marco {
   height: 100%;
   min-height: 0;
@@ -449,6 +483,7 @@ a {
 
 .foto figcaption {
   position: absolute;
+  z-index: 2;
   left: 0.6rem;
   bottom: 0.6rem;
   padding: 0.25rem 0.55rem;
@@ -572,6 +607,18 @@ a {
     inset: 0;
     height: auto;
     min-height: 0;
+    background: var(--pantalla);
+  }
+
+  /* Con escena, el póster tiene el mismo encuadre que el canvas (secuencia.ts) */
+  .anima .poster img {
+    mask-image: none;
+  }
+
+  @container (max-aspect-ratio: 8 / 9) {
+    .anima .poster img {
+      mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+    }
   }
 
   .anima .lienzo {
@@ -613,7 +660,12 @@ a {
     letter-spacing: 0.16em;
     text-transform: uppercase;
     white-space: nowrap;
-    text-shadow: 0 1px 8px rgb(0 0 0 / 0.7);
+  }
+
+  .desliza-texto {
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    background: rgb(3 8 11 / 0.6);
   }
 
   .desliza-linea {
@@ -621,7 +673,7 @@ a {
     height: 2.5rem;
     background: linear-gradient(to bottom, var(--ambar), transparent);
     transform-origin: top;
-    animation: desliza 1.8s ease-in-out 3;
+    animation: desliza 1.8s ease-in-out 2;
   }
 
   /* La portada va encima del vídeo, sin fondo propio: el fondo es el de la
@@ -633,10 +685,44 @@ a {
     height: 100vh;
     height: 100svh;
     min-height: 0;
+    /* Sus enlaces aún invisibles no se pueden pulsar (escenas.ts la activa) */
+    pointer-events: none;
+  }
+
+  .anima .capa-portada.is-activa,
+  .anima.saltada .capa-portada {
+    pointer-events: auto;
   }
 
   .anima .portada {
     height: 100%;
+    min-height: 0;
+    padding-bottom: clamp(3rem, 7svh, 4.5rem);
+  }
+
+  /* La foto no estira su fila: ocupa el hueco que dejan los textos y, si el
+     hueco es mínimo (pantallas justas), no se enseña */
+  .anima .foto {
+    container-type: size;
+  }
+
+  .anima .foto .foto-caja {
+    position: absolute;
+    inset: 0;
+    height: auto;
+  }
+
+  .anima .foto-marco {
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+
+  @container (max-height: 4.5rem) {
+    .foto-caja,
+    .foto figcaption {
+      display: none;
+    }
   }
 
   .anima .rejilla {
@@ -664,14 +750,11 @@ a {
   .anima .tecleado {
     --typed: 0;
     position: absolute;
-    left: 0;
-    top: 50%;
     display: block;
     margin: 0;
-    translate: 0 -50%;
     color: var(--boceto);
     font-family: var(--mono);
-    font-size: calc(var(--tam-nombre) * 0.74);
+    font-size: calc(var(--tam-nombre) * 0.6);
     font-weight: 300;
     line-height: 1;
     letter-spacing: 0;
@@ -793,7 +876,6 @@ a {
   }
 
   .anima .foto figcaption {
-    z-index: 2;
     opacity: 0;
   }
 
@@ -815,7 +897,9 @@ a {
   }
 
   .obra-prompt {
+    flex: none;
     color: var(--acento-c);
+    white-space: nowrap;
   }
 
   .obra-prompt::before {
@@ -823,7 +907,37 @@ a {
   }
 
   .obra-fase {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* «Saltar intro» antes de que llegue GSAP: la portada ya montada, en CSS */
+  .anima.saltada .capa-video,
+  .anima.saltada .tecleado,
+  .anima.saltada .rejilla,
+  .anima.saltada .obra {
+    visibility: hidden;
+  }
+
+  .anima.saltada .intro {
+    --c: 1;
+  }
+
+  .anima.saltada [data-caja] {
+    --wf: 0;
+    --txt: 1;
+  }
+
+  .anima.saltada .nombre,
+  .anima.saltada .luz,
+  .anima.saltada .foto figcaption {
+    opacity: 1;
+  }
+
+  .anima.saltada .foto-marco {
+    clip-path: none;
   }
 
   .obra-barra {
@@ -840,17 +954,6 @@ a {
     scale: var(--obra, 0) 1;
   }
 
-  /* En móvil la foto rellena el hueco que dejan los textos */
-  @media (max-width: 899px) {
-    .anima .foto-marco {
-      aspect-ratio: auto;
-      height: 100%;
-    }
-
-    .anima .servicio-texto {
-      display: block;
-    }
-  }
 }
 
 @keyframes parpadeo {

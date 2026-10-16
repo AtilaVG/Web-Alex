@@ -20,6 +20,8 @@ export default defineConfig({
   site,
   base,
   trailingSlash: 'ignore',
+  // Una sola página con ~12 KB de CSS: va dentro del HTML y no bloquea el primer pintado
+  build: { inlineStylesheets: 'always' },
   fonts: [
     {
       provider: fontProviders.local(),
