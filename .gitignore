@@ -1,0 +1,16 @@
+# Dependencias y build
+node_modules/
+dist/
+.astro/
+
+# Informes de Lighthouse en local
+lighthouse/
+
+# Entorno
+.env
+.env.*
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
