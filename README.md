@@ -90,7 +90,7 @@ scripts/lighthouse.sh    mide Lighthouse en móvil contra el build
 ## Publicar en GitHub Pages
 
 1. *Settings → Pages → Source*: **GitHub Actions**.
-2. Cada push compila la web (y pasa `astro check`); solo la rama principal se publica. La URL y la ruta base (`/web-alex/`, es decir, https://atilavg.github.io/web-alex/) las pone el workflow solas; con dominio propio la base pasa a ser `/`.
+2. Cada push compila la web (y pasa `astro check`); solo la rama principal se publica. La URL y la ruta base (`/Web-Alex/`, es decir, https://atilavg.github.io/Web-Alex/) las pone el workflow solas; con dominio propio la base pasa a ser `/`.
 3. Mientras sea prototipo lleva `noindex`. Para la versión definitiva, añadir `INDEXAR=true` al paso «Compilar» del workflow.
 
 ## Pendiente

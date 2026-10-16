@@ -109,13 +109,21 @@ function montar(intro: HTMLElement, noCabe: () => void) {
   cuandoLibre(() => void secuencia.precargar());
 
   // Al cruzar el corte de móvil (girar una tableta, maximizar la ventana) se
-  // cambia de juego de fotogramas sin rehacer la escena.
-  const alCambiarMovil = () => {
+  // cambia de juego de fotogramas sin rehacer la escena. Si el vídeo está a la
+  // vista se espera a que se funda, para que no parpadee mientras llega el otro.
+  let cambioPendiente = false;
+  const cambiarJuego = () => {
+    cambioPendiente = false;
     if (mediaMovil.matches === movil) return;
     movil = mediaMovil.matches;
     secuencia.destruir();
     secuencia = nuevaSecuencia(movil);
     void secuencia.precargar();
+  };
+  const videoOculto = (t: number) => t >= T.fundido + 0.4;
+  const alCambiarMovil = () => {
+    if (videoOculto(tl.time())) cambiarJuego();
+    else cambioPendiente = true;
   };
   const alRedimensionar = () => secuencia.medir();
   mediaMovil.addEventListener('change', alCambiarMovil);
@@ -228,6 +236,7 @@ function montar(intro: HTMLElement, noCabe: () => void) {
     }
     // Mientras la portada no se lee, sus enlaces invisibles no se pueden pulsar
     portada.classList.toggle('is-activa', t >= PORTADA_ACTIVA);
+    if (cambioPendiente && videoOculto(t)) cambiarJuego();
     // El cursor parpadea mientras espera, pero no mientras teclea
     const tecleando = t >= T.teclear && t < T.teclear + 1.2;
     const visible = t >= T.cursor && t < T.tipografia;
@@ -244,7 +253,16 @@ function montar(intro: HTMLElement, noCabe: () => void) {
   tl.eventCallback('onUpdate', actualizarFase);
   actualizarFase();
 
+  // Tras un salto hecho por código («Saltar intro», volver a la posición tras
+  // girar el móvil) la escena va directa al punto nuevo, sin reproducir lo saltado
+  const alSaltar = () => {
+    ScrollTrigger.update();
+    tl.scrollTrigger?.getTween()?.progress(1);
+  };
+  window.addEventListener('posicion-saltada', alSaltar);
+
   return () => {
+    window.removeEventListener('posicion-saltada', alSaltar);
     vigia.disconnect();
     if (comprobando) cancelAnimationFrame(comprobando);
     mediaMovil.removeEventListener('change', alCambiarMovil);

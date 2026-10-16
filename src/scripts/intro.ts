@@ -10,7 +10,7 @@
  *   persona empieza a hacer scroll.
  */
 import { MEDIA_ESCENA, hayEscena } from './comun';
-import { cambioDeModo, finIntro, guardarPosicion } from './posicion';
+import { avisarSalto, cambioDeModo, finIntro, guardarPosicion } from './posicion';
 
 const raiz = document.documentElement;
 const intro = document.querySelector<HTMLElement>('[data-intro]');
@@ -30,6 +30,7 @@ function irAlFinal() {
   haSaltado = true;
   if (!escenasListas) raiz.classList.add('saltada');
   window.scrollTo({ top: finIntro(), behavior: 'instant' });
+  avisarSalto();
 }
 
 if (intro && portada) {

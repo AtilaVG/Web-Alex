@@ -95,7 +95,8 @@ export function crearSecuencia({ canvas, carpeta, total, ancho: iw, alto: ih, fo
     pedidos[i] = 1;
     try {
       const respuesta = await fetch(ruta(i), { priority: i === 0 ? 'high' : 'low' } as RequestInit);
-      if (!respuesta.ok) return;
+      // Una respuesta que no es una imagen (portal cautivo, página de error) no se guarda
+      if (!respuesta.ok || !respuesta.headers.get('content-type')?.startsWith('image/')) return;
       blobs[i] = await respuesta.blob();
       if (!parado && cerca(i)) decodificar();
     } catch {
@@ -105,7 +106,8 @@ export function crearSecuencia({ canvas, carpeta, total, ancho: iw, alto: ih, fo
 
   async function precargar() {
     cola = orden();
-    await descargar(cola.shift()!);
+    // Primero el que se está viendo (el 1 arriba del todo; otro si se recarga a mitad)
+    await descargar(siguiente());
     const trabajador = async () => {
       for (let i = siguiente(); i >= 0 && !parado; i = siguiente()) await descargar(i);
     };
@@ -140,7 +142,9 @@ export function crearSecuencia({ canvas, carpeta, total, ancho: iw, alto: ih, fo
             decodificar();
           },
           () => {
+            // No se puede decodificar: se descarta para no reintentarlo en bucle
             decodificando.delete(i);
+            blobs[i] = undefined;
             decodificar();
           },
         );

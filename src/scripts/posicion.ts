@@ -22,6 +22,8 @@ const nav = document.querySelector<HTMLElement>('[data-nav]');
 
 let ancla: Ancla | null = null;
 let restaurandoHasta = 0;
+/** Dónde dejó el scroll la última restauración (-1: aún no ha restaurado). */
+let yRestaurada = -1;
 
 const altoNav = () => nav?.offsetHeight ?? 0;
 const arribaEnDocumento = (el: Element) => el.getBoundingClientRect().top + window.scrollY;
@@ -70,17 +72,29 @@ function destino(a: Ancla) {
 
 /** Se llama en cada scroll (ya limitado a uno por fotograma). */
 export function guardarPosicion() {
-  if (performance.now() < restaurandoHasta) return;
+  // Mientras se asienta un cambio de modo no se guarda nada, salvo que la
+  // persona ya esté haciendo scroll por su cuenta
+  const asentando = performance.now() < restaurandoHasta;
+  const quieta = yRestaurada < 0 || Math.abs(window.scrollY - yRestaurada) < 2;
+  if (asentando && quieta) return;
   ancla = calcular();
+}
+
+/** Tras un salto hecho por código: la escena se pone al día sin reproducir lo saltado. */
+export function avisarSalto() {
+  window.dispatchEvent(new Event('posicion-saltada'));
 }
 
 export function restaurarPosicion() {
   if (!ancla) return;
   window.scrollTo({ top: Math.max(0, Math.round(destino(ancla))), behavior: 'instant' });
+  yRestaurada = window.scrollY;
+  avisarSalto();
 }
 
 /** La página va a cambiar de modo: se congela el ancla y se recupera cuando se asiente. */
 export function cambioDeModo() {
+  yRestaurada = -1;
   restaurandoHasta = performance.now() + ESPERA;
   requestAnimationFrame(() => requestAnimationFrame(restaurarPosicion));
 }

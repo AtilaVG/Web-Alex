@@ -263,9 +263,11 @@ a {
   translate: -50% -50%;
 }
 
-/* Sin escena: la imagen se funde por abajo con la portada */
+/* Sin escena: la imagen se funde por abajo con la portada. La imagen está
+   centrada y es más alta que su caja, así que el fundido se mide con la caja
+   (su borde inferior está en 50% + 50cqh de la imagen). */
 .poster img {
-  mask-image: linear-gradient(to bottom, #000 60%, transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(50% + 10cqh), transparent calc(50% + 50cqh));
 }
 
 @container (max-aspect-ratio: 8 / 9) {
@@ -334,6 +336,8 @@ a {
   background:
     radial-gradient(55% 60% at 4% 6%, rgb(255 181 71 / 0.16), transparent 72%),
     radial-gradient(40% 50% at 100% 100%, rgb(255 181 71 / 0.05), transparent 70%);
+  /* Sin escena va justo debajo de la imagen: entra suave, sin línea */
+  mask-image: linear-gradient(transparent, #000 9rem);
 }
 
 .portada {
@@ -526,8 +530,13 @@ a {
   font-weight: 500;
 }
 
-/* Móvil y tableta vertical: una columna; la foto ocupa el hueco que sobre */
+/* Móvil y tableta vertical: una columna; la foto con su proporción (el pie
+   de foto se queda encima de ella aunque sobre alto) */
 @media (max-width: 899px) {
+  .foto {
+    align-self: start;
+  }
+
   .foto-marco {
     aspect-ratio: 16 / 10;
     height: auto;
@@ -703,6 +712,7 @@ a {
   /* La foto no estira su fila: ocupa el hueco que dejan los textos y, si el
      hueco es mínimo (pantallas justas), no se enseña */
   .anima .foto {
+    align-self: stretch;
     container-type: size;
   }
 
@@ -743,6 +753,13 @@ a {
 
   .anima .luz {
     opacity: 0;
+    mask-image: none;
+  }
+
+  /* Capas decorativas: no tapan clics ni selección del texto real */
+  .anima .tecleado,
+  .anima .obra {
+    pointer-events: none;
   }
 
   /* Nombre tecleado en monoespaciada: cada letra mide 1ch, así el cursor se
