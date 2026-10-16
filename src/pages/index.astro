@@ -1,0 +1,71 @@
+---
+import Base from '../layouts/Base.astro';
+import Intro from '../components/Intro.astro';
+import { perfil } from '../config/perfil';
+import { secuencias, mediaMovil, nombreFotograma } from '../config/intro';
+import { url } from '../lib/url';
+
+const primerEscritorio = url(`${secuencias.escritorio.carpeta}/${nombreFotograma(1)}`);
+const primerMovil = url(`${secuencias.movil.carpeta}/${nombreFotograma(1)}`);
+const anio = new Date().getFullYear();
+---
+
+<Base>
+  <Fragment slot="head">
+    <!-- El primer fotograma es el LCP: se pide antes que nada (salvo con movimiento reducido, que usa otra imagen) -->
+    <link
+      rel="preload"
+      as="image"
+      href={primerEscritorio}
+      media={`(prefers-reduced-motion: no-preference) and (not ${mediaMovil})`}
+      fetchpriority="high"
+    />
+    <link
+      rel="preload"
+      as="image"
+      href={primerMovil}
+      media={`(prefers-reduced-motion: no-preference) and ${mediaMovil}`}
+      fetchpriority="high"
+    />
+  </Fragment>
+
+  <Intro />
+
+  <!-- Acto 3 (pendiente): proyectos en marco de navegador + rama de git -->
+  <section class="seccion" id="proyectos" aria-labelledby="titulo-proyectos">
+    <div class="contenedor">
+      <p class="seccion-etiqueta"><span class="pendiente">Acto 3 · pendiente</span></p>
+      <h2 id="titulo-proyectos" class="seccion-titulo">Proyectos</h2>
+      <p class="seccion-texto">
+        Aquí irán los proyectos, cada uno en un marco de navegador con su vídeo y su nota de Lighthouse, y la
+        trayectoria dibujada como una rama de git.
+      </p>
+    </div>
+  </section>
+
+  <!-- Acto 4 (pendiente): salida del portátil + contacto -->
+  <section class="seccion seccion-contacto" id="contacto" aria-labelledby="titulo-contacto">
+    <div class="contenedor">
+      <p class="seccion-etiqueta"><span class="pendiente">Acto 4 · pendiente</span></p>
+      <h2 id="titulo-contacto" class="seccion-titulo">Esta también la he hecho yo</h2>
+      <p class="seccion-texto">
+        {
+          perfil.correo ? (
+            <a href={`mailto:${perfil.correo}`}>{perfil.correo}</a>
+          ) : (
+            <>
+              Correo de contacto: <span class="pendiente">pendiente</span>
+            </>
+          )
+        }
+      </p>
+    </div>
+  </section>
+
+  <footer class="pie" slot="pie">
+    <div class="contenedor pie-dentro">
+      <p>© {anio} {perfil.nombre}</p>
+      <p>Hecha con Astro y GSAP. Vídeo e imágenes de la intro generados con IA.</p>
+    </div>
+  </footer>
+</Base>

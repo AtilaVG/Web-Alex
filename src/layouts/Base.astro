@@ -1,0 +1,66 @@
+---
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+import Navegacion from '../components/Navegacion.astro';
+import { perfil } from '../config/perfil';
+import { url } from '../lib/url';
+
+interface Props {
+  titulo?: string;
+  descripcion?: string;
+}
+
+const { titulo = perfil.titulo, descripcion = perfil.descripcion } = Astro.props;
+const canonica = new URL(Astro.url.pathname, Astro.site).href;
+const imagenSocial = new URL(url('keyframe-a.jpg'), Astro.site).href;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titulo}</title>
+    <meta name="description" content={descripcion} />
+    <link rel="canonical" href={canonica} />
+    {!__INDEXAR__ && <meta name="robots" content="noindex, nofollow" />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <meta property="og:url" content={canonica} />
+    <meta property="og:image" content={imagenSocial} />
+    <meta property="og:image:alt" content="Portátil abierto sobre un escritorio de madera, de noche, con una lámpara ámbar (imagen generada con IA)" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta name="theme-color" content="#03080b" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href={url('favicon.svg')} type="image/svg+xml" />
+
+    <script is:inline>
+      // Escenas ligadas al scroll solo con JS y si no se ha pedido reducir el
+      // movimiento. Sin esta clase, el CSS enseña la portada ya montada.
+      document.documentElement.classList.add('js');
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('anima');
+      }
+    </script>
+
+    <slot name="head" />
+
+    <Font cssVariable="--fuente-texto" />
+    <Font cssVariable="--fuente-mono" />
+    <Font cssVariable="--fuente-titulos" />
+  </head>
+  <body>
+    <Navegacion />
+    <main id="contenido">
+      <slot />
+    </main>
+    <slot name="pie" />
+    <script>
+      import '../scripts/intro';
+    </script>
+  </body>
+</html>

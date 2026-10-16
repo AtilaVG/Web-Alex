@@ -1,0 +1,19 @@
+---
+import { perfil } from '../config/perfil';
+---
+
+<header class="nav" data-nav>
+  <div class="nav-dentro contenedor">
+    <a class="nav-marca" href="#arriba" aria-label={`${perfil.nombre}, ir al principio`}>
+      <span aria-hidden="true">{perfil.nombre.toLowerCase()}<span class="nav-guion">_</span></span>
+    </a>
+    <nav class="nav-enlaces" aria-label="Principal">
+      <a href="#proyectos">Proyectos</a>
+      <a href="#contacto">Contacto</a>
+      <a class="nav-saltar" href="#portada" data-saltar-intro>
+        Saltar intro
+        <svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14"><path d="M8 2v11M3.5 8.5 8 13l4.5-4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </a>
+    </nav>
+  </div>
+</header>
