@@ -1,0 +1,1069 @@
+/* ==========================================================================
+   Web personal de Alex · sistema de diseño
+   Oscuro y cálido, con el ámbar de la lámpara del vídeo como acento.
+   ========================================================================== */
+
+:root {
+  /* Negro medio del último fotograma del vídeo (rgb 3 8 11): la intro termina
+     en este color para que el paso del vídeo a la web no se note. */
+  --pantalla: #03080b;
+  /* Fondo de la web una vez "pintada": casi negro, cálido. */
+  --fondo: #0e0b09;
+  --fondo-2: #17120e;
+  --tinta: #f3ece2;
+  --tinta-2: #bdb2a4;
+  --tenue: #958a7d;
+  --ambar: #ffb547;
+  --ambar-claro: #ffcf85;
+  --sobre-ambar: #1b1204;
+  --linea: rgb(243 236 226 / 0.12);
+
+  /* Fase de boceto (antes del color): grises neutros sobre el negro de pantalla */
+  --boceto: #d5d9db;
+  --boceto-2: #9ea7ac;
+  --caja: #182024;
+  --caja-borde: #2a353b;
+
+  --margen: clamp(1rem, 4vw, 3rem);
+  --hueco: clamp(0.5rem, 1.6vw, 1.5rem);
+  --nav-alto: 4rem;
+  --ancho-max: 1360px;
+
+  /* Las tres fuentes las define Astro (astro.config.mjs) con su fallback ajustado */
+  --texto: var(--fuente-texto, system-ui, sans-serif);
+  --mono: var(--fuente-mono, ui-monospace, monospace);
+  --titulos: var(--fuente-titulos, Georgia, serif);
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: var(--texto);
+  font-size: 100%;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img,
+picture,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ambar);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+[tabindex='-1']:focus {
+  outline: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.contenedor {
+  width: 100%;
+  max-width: var(--ancho-max);
+  margin-inline: auto;
+  padding-inline: var(--margen);
+}
+
+/* ==========================================================================
+   Navegación fija
+   ========================================================================== */
+
+.nav {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+  height: var(--nav-alto);
+  transition:
+    background-color 0.3s,
+    border-color 0.3s;
+  border-bottom: 1px solid transparent;
+}
+
+.nav.is-solida {
+  background: rgb(14 11 9 / 0.82);
+  border-bottom-color: var(--linea);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.nav-dentro {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.nav-marca {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
+}
+
+.nav-guion {
+  color: var(--ambar);
+}
+
+.nav-enlaces {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.25rem, 1.6vw, 1.25rem);
+  font-size: 0.875rem;
+}
+
+.nav-enlaces a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding-inline: 0.4rem;
+  text-decoration: none;
+  color: var(--tinta);
+  text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
+}
+
+.nav-enlaces a:hover {
+  color: var(--ambar-claro);
+}
+
+.nav-enlaces .nav-saltar {
+  min-height: 2.5rem;
+  padding-inline: 0.85rem;
+  white-space: nowrap;
+  border: 1px solid rgb(243 236 226 / 0.3);
+  border-radius: 999px;
+  background: rgb(3 8 11 / 0.45);
+  text-shadow: none;
+  transition:
+    opacity 0.25s,
+    visibility 0.25s,
+    border-color 0.2s;
+}
+
+.nav-enlaces .nav-saltar:hover {
+  border-color: var(--ambar);
+}
+
+.nav.is-pasada .nav-saltar {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@media (max-width: 380px) {
+  .nav-enlaces {
+    gap: 0.15rem;
+    font-size: 0.8125rem;
+  }
+
+  .nav-enlaces .nav-saltar {
+    padding-inline: 0.65rem;
+  }
+
+  .nav-enlaces .nav-saltar svg {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Intro: actos 1 y 2
+   Por defecto (sin JS o con movimiento reducido) todo está quieto y en orden:
+   imagen fija y, debajo, la portada montada. Con .anima la sección se alarga
+   y la escena se queda fija mientras se hace scroll.
+   ========================================================================== */
+
+.intro {
+  /* --c: progreso de la fase de color (0 boceto en grises, 1 color final) */
+  --c: 1;
+  --tinta-c: color-mix(in oklab, var(--tinta) calc(var(--c) * 100%), var(--boceto));
+  --tinta-2-c: color-mix(in oklab, var(--tinta-2) calc(var(--c) * 100%), var(--boceto-2));
+  --acento-c: color-mix(in oklab, var(--ambar) calc(var(--c) * 100%), var(--boceto));
+
+  position: relative;
+  background: color-mix(in oklab, var(--fondo) calc(var(--c) * 100%), var(--pantalla));
+}
+
+.escena {
+  position: relative;
+}
+
+/* ---------- Acto 1: vídeo ---------- */
+
+.capa-video {
+  position: relative;
+  height: 62svh;
+  min-height: 18rem;
+  overflow: hidden;
+  container-type: size;
+}
+
+/* Velo oscuro arriba: la navegación se lee aunque la lámpara pase por detrás */
+.capa-video::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: 7.5rem;
+  background: linear-gradient(rgb(3 8 11 / 0.92), rgb(3 8 11 / 0.62) 55%, transparent);
+  pointer-events: none;
+}
+
+/* El póster y el canvas comparten encuadre: a pantalla completa en horizontal;
+   en vertical se reduce lo justo para que el portátil se vea entero (--foco). */
+.poster img {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(max(100cqw, 177.7778cqh), calc(100cqw / var(--foco)));
+  max-width: none;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  translate: -50% -50%;
+}
+
+/* Sin escena: la imagen se funde por abajo con la portada. La imagen está
+   centrada y es más alta que su caja, así que el fundido se mide con la caja
+   (su borde inferior está en 50% + 50cqh de la imagen). */
+.poster img {
+  mask-image: linear-gradient(to bottom, #000 calc(50% + 10cqh), transparent calc(50% + 50cqh));
+}
+
+@container (max-aspect-ratio: 8 / 9) {
+  .poster img {
+    mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 60%, transparent);
+  }
+}
+
+.lienzo {
+  display: none;
+}
+
+.aviso-ia {
+  position: absolute;
+  right: var(--margen);
+  bottom: 1rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: rgb(3 8 11 / 0.6);
+  color: var(--tinta-2);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.02em;
+}
+
+.aviso-ia-punto {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--ambar);
+}
+
+.solo-anima {
+  display: none;
+}
+
+.desliza {
+  display: none;
+}
+
+/* ---------- Acto 2: portada ---------- */
+
+.capa-portada {
+  position: relative;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 100svh;
+}
+
+.rejilla,
+.tecleado,
+.obra {
+  display: none;
+}
+
+.luz {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--c);
+  background:
+    radial-gradient(55% 60% at 4% 6%, rgb(255 181 71 / 0.16), transparent 72%),
+    radial-gradient(40% 50% at 100% 100%, rgb(255 181 71 / 0.05), transparent 70%);
+  /* Sin escena va justo debajo de la imagen: entra suave, sin línea */
+  mask-image: linear-gradient(transparent, #000 9rem);
+}
+
+.portada {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  column-gap: var(--hueco);
+  row-gap: clamp(0.9rem, 2.6svh, 1.75rem);
+  align-content: center;
+  padding-top: calc(var(--nav-alto) + clamp(0.5rem, 3svh, 2.5rem));
+  padding-bottom: clamp(2.5rem, 7svh, 4.5rem);
+}
+
+.portada > * {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.titular {
+  margin: 0;
+}
+
+.antetitulo {
+  margin: 0 0 clamp(0.5rem, 1.6svh, 1rem);
+  width: fit-content;
+  color: var(--acento-c);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.nombre-caja {
+  --tam-nombre: clamp(4.5rem, min(31vw, 40svh), 22rem);
+  position: relative;
+  display: grid;
+  align-items: last baseline;
+}
+
+.nombre-caja > * {
+  grid-area: 1 / 1;
+}
+
+.nombre {
+  margin: 0;
+  width: fit-content;
+  color: var(--tinta-c);
+  font-family: var(--titulos);
+  font-size: var(--tam-nombre);
+  font-weight: 400;
+  line-height: 0.86;
+  letter-spacing: -0.025em;
+}
+
+.nombre-caret {
+  display: inline-block;
+  width: 0.032em;
+  height: 0.68em;
+  margin-left: 0.1em;
+  background: var(--ambar);
+  opacity: var(--c);
+  vertical-align: baseline;
+}
+
+.entradilla {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--tinta-2-c);
+  font-size: clamp(1.0625rem, 0.95rem + 0.55vw, 1.4rem);
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.boton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  padding-inline: 1.5rem;
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.boton-principal {
+  background: var(--acento-c);
+  color: var(--sobre-ambar);
+}
+
+.boton-principal:hover {
+  background: var(--ambar-claro);
+}
+
+.boton-secundario {
+  border: 1px solid color-mix(in oklab, var(--tinta-c) 35%, transparent);
+  color: var(--tinta-c);
+}
+
+.boton-secundario:hover {
+  border-color: var(--ambar);
+  color: var(--ambar-claro);
+}
+
+.foto {
+  position: relative;
+  margin: 0;
+  min-height: 0;
+}
+
+.foto-caja {
+  position: relative;
+  height: 100%;
+}
+
+.foto-marco {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: var(--fondo-2);
+}
+
+.foto-marco picture,
+.foto-marco img {
+  width: 100%;
+  height: 100%;
+}
+
+.foto-marco img {
+  object-fit: cover;
+  object-position: 14% 38%;
+}
+
+.foto figcaption {
+  position: absolute;
+  z-index: 2;
+  left: 0.6rem;
+  bottom: 0.6rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: rgb(14 11 9 / 0.72);
+  color: var(--tinta-2);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+}
+
+.servicios {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--hueco);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.servicio {
+  padding-top: 0.85rem;
+  border-top: 1px solid color-mix(in oklab, var(--tinta-c) 14%, transparent);
+  color: var(--tinta-2-c);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.servicio-num {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--acento-c);
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+}
+
+.servicio strong {
+  display: block;
+  color: var(--tinta-c);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+/* Móvil y tableta vertical: una columna; la foto con su proporción (el pie
+   de foto se queda encima de ella aunque sobre alto) */
+@media (max-width: 899px) {
+  .foto {
+    align-self: start;
+  }
+
+  .foto-marco {
+    aspect-ratio: 16 / 10;
+    height: auto;
+  }
+}
+
+@media (min-width: 900px) {
+  .portada {
+    grid-template-rows: auto auto auto 1fr auto;
+    row-gap: clamp(1rem, 2.8svh, 2rem);
+  }
+
+  .titular {
+    grid-column: 1 / span 8;
+    grid-row: 1;
+  }
+
+  .entradilla {
+    grid-column: 1 / span 6;
+    grid-row: 2;
+  }
+
+  .acciones {
+    grid-column: 1 / span 6;
+    grid-row: 3;
+  }
+
+  .foto {
+    grid-column: 9 / span 4;
+    grid-row: 1 / span 4;
+  }
+
+  .foto-marco {
+    aspect-ratio: auto;
+    height: 100%;
+    min-height: 14rem;
+  }
+
+  .servicios {
+    grid-column: 1 / -1;
+    grid-row: 5;
+    grid-template-columns: subgrid;
+    gap: var(--hueco);
+  }
+
+  .servicio {
+    grid-column: span 4;
+    font-size: 0.9375rem;
+  }
+
+  .servicio strong {
+    font-size: 1.0625rem;
+  }
+}
+
+/* ==========================================================================
+   Escena animada (con JS, sin movimiento reducido y con altura suficiente)
+   ========================================================================== */
+
+@media (min-height: 560px) and (prefers-reduced-motion: no-preference) {
+  .anima .intro {
+    --c: 0;
+    /* 100vh de escena + el recorrido de scroll de los dos actos */
+    height: 520vh;
+  }
+
+  .anima .escena {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100lvh;
+    overflow: hidden;
+  }
+
+  .anima .capa-video {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    min-height: 0;
+    background: var(--pantalla);
+  }
+
+  /* Con escena, el póster tiene el mismo encuadre que el canvas (secuencia.ts) */
+  .anima .poster img {
+    mask-image: none;
+  }
+
+  @container (max-aspect-ratio: 8 / 9) {
+    .anima .poster img {
+      mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+    }
+  }
+
+  .anima .lienzo {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    opacity: 0;
+  }
+
+  .anima .lienzo.is-listo {
+    opacity: 1;
+  }
+
+  .anima .solo-anima {
+    display: inline;
+  }
+
+  .anima .solo-fijo {
+    display: none;
+  }
+
+  .anima .desliza {
+    position: absolute;
+    left: 50%;
+    bottom: 3.5rem;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    translate: -50% 0;
+    color: var(--tinta-2);
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .desliza-texto {
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    background: rgb(3 8 11 / 0.6);
+  }
+
+  .desliza-linea {
+    width: 1px;
+    height: 2.5rem;
+    background: linear-gradient(to bottom, var(--ambar), transparent);
+    transform-origin: top;
+    animation: desliza 1.8s ease-in-out 2;
+  }
+
+  /* La portada va encima del vídeo, sin fondo propio: el fondo es el de la
+     sección, que pasa del negro de la pantalla al oscuro cálido (--c). */
+  .anima .capa-portada {
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 1;
+    height: 100vh;
+    height: 100svh;
+    min-height: 0;
+    /* Sus enlaces aún invisibles no se pueden pulsar (escenas.ts la activa) */
+    pointer-events: none;
+  }
+
+  .anima .capa-portada.is-activa,
+  .anima.saltada .capa-portada {
+    pointer-events: auto;
+  }
+
+  .anima .portada {
+    height: 100%;
+    min-height: 0;
+    padding-bottom: clamp(3rem, 7svh, 4.5rem);
+  }
+
+  /* La foto no estira su fila: ocupa el hueco que dejan los textos y, si el
+     hueco es mínimo (pantallas justas), no se enseña */
+  .anima .foto {
+    align-self: stretch;
+    container-type: size;
+  }
+
+  .anima .foto .foto-caja {
+    position: absolute;
+    inset: 0;
+    height: auto;
+  }
+
+  .anima .foto-marco {
+    height: 100%;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+
+  @container (max-height: 4.5rem) {
+    .foto-caja,
+    .foto figcaption {
+      display: none;
+    }
+  }
+
+  .anima .rejilla {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: var(--hueco);
+    pointer-events: none;
+  }
+
+  .rejilla-col {
+    background: rgb(213 217 219 / 0.03);
+    border-inline: 1px solid rgb(213 217 219 / 0.09);
+    transform-origin: top;
+    transform: scaleY(0);
+  }
+
+  .anima .luz {
+    opacity: 0;
+    mask-image: none;
+  }
+
+  /* Capas decorativas: no tapan clics ni selección del texto real */
+  .anima .tecleado,
+  .anima .obra {
+    pointer-events: none;
+  }
+
+  /* Nombre tecleado en monoespaciada: cada letra mide 1ch, así el cursor se
+     coloca con translate y no mueve nada de sitio. */
+  .anima .tecleado {
+    --typed: 0;
+    position: absolute;
+    display: block;
+    margin: 0;
+    color: var(--boceto);
+    font-family: var(--mono);
+    font-size: calc(var(--tam-nombre) * 0.6);
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: 0;
+    white-space: nowrap;
+    opacity: 0;
+  }
+
+  .letra {
+    opacity: clamp(0, var(--typed) - var(--i), 1);
+  }
+
+  .cursor {
+    display: inline-block;
+    width: 0.09em;
+    height: 0.95em;
+    margin-left: 0.04em;
+    background: currentColor;
+    vertical-align: -0.12em;
+    translate: calc((var(--typed) - var(--n)) * 1ch) 0;
+  }
+
+  .cursor.parpadea {
+    animation: parpadeo 1.06s steps(1, end) 4;
+  }
+
+  .anima .nombre {
+    opacity: 0;
+  }
+
+  .anima [data-caja] {
+    --wf: 0;
+    --txt: 0;
+  }
+
+  .anima .wf {
+    position: relative;
+  }
+
+  .anima .wf-txt {
+    opacity: var(--txt);
+  }
+
+  /* Cajas grises del boceto */
+  .anima .wf::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--caja-borde);
+    border-radius: 0.35rem;
+    background: var(--caja);
+    opacity: var(--wf);
+    pointer-events: none;
+  }
+
+  .anima .wf::after {
+    content: attr(data-wf) / '';
+    position: absolute;
+    top: 0.3rem;
+    right: 0.45rem;
+    color: #8a959b;
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    text-transform: none;
+    opacity: var(--wf);
+    pointer-events: none;
+  }
+
+  .anima .wf-lineas::before {
+    border: 0;
+    border-radius: 0.2rem;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--caja) 0 0.95em,
+      transparent 0.95em 1.45em
+    );
+  }
+
+  .anima .boton.wf::before {
+    border-radius: 999px;
+  }
+
+  .anima .wf-imagen::before {
+    z-index: 1;
+    border-radius: 0.5rem;
+    background:
+      linear-gradient(to top right, transparent calc(50% - 0.5px), var(--caja-borde) 50%, transparent calc(50% + 0.5px)),
+      linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--caja-borde) 50%, transparent calc(50% + 0.5px)),
+      var(--caja);
+  }
+
+  .anima .wf-imagen::after {
+    z-index: 2;
+    top: 0.6rem;
+    right: 0.7rem;
+  }
+
+  .anima .boton-principal,
+  .anima .boton-secundario {
+    background-clip: padding-box;
+  }
+
+  .anima .boton-principal {
+    background: color-mix(in oklab, var(--acento-c) calc(var(--txt) * 100%), transparent);
+  }
+
+  .anima .boton-secundario {
+    border-color: color-mix(in oklab, var(--tinta-c) calc(var(--txt) * 35%), transparent);
+  }
+
+  .anima .servicio {
+    border-top-color: color-mix(in oklab, var(--tinta-c) calc(var(--txt) * 14%), transparent);
+  }
+
+  .anima .foto-marco {
+    clip-path: inset(100% 0 0 0);
+  }
+
+  .anima .foto figcaption {
+    opacity: 0;
+  }
+
+  /* Barra de "build" abajo: dice en qué fase está la construcción */
+  .anima .obra {
+    position: absolute;
+    left: var(--margen);
+    right: var(--margen);
+    bottom: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: calc(var(--ancho-max) - 2 * var(--margen));
+    margin-inline: auto;
+    color: var(--boceto-2);
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    opacity: 0;
+  }
+
+  .obra-prompt {
+    flex: none;
+    color: var(--acento-c);
+    white-space: nowrap;
+  }
+
+  .obra-prompt::before {
+    content: '$ ';
+  }
+
+  .obra-fase {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* «Saltar intro» antes de que llegue GSAP: la portada ya montada, en CSS */
+  .anima.saltada .capa-video,
+  .anima.saltada .tecleado,
+  .anima.saltada .rejilla,
+  .anima.saltada .obra {
+    visibility: hidden;
+  }
+
+  .anima.saltada .intro {
+    --c: 1;
+  }
+
+  .anima.saltada [data-caja] {
+    --wf: 0;
+    --txt: 1;
+  }
+
+  .anima.saltada .nombre,
+  .anima.saltada .luz,
+  .anima.saltada .foto figcaption {
+    opacity: 1;
+  }
+
+  .anima.saltada .foto-marco {
+    clip-path: none;
+  }
+
+  .obra-barra {
+    flex: 1;
+    height: 1px;
+    background: rgb(213 217 219 / 0.12);
+  }
+
+  .obra-barra span {
+    display: block;
+    height: 100%;
+    background: var(--acento-c);
+    transform-origin: left;
+    scale: var(--obra, 0) 1;
+  }
+
+}
+
+@keyframes parpadeo {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes desliza {
+  0% {
+    scale: 1 0;
+  }
+  50% {
+    scale: 1 1;
+  }
+  100% {
+    scale: 1 1;
+    opacity: 0;
+  }
+}
+
+/* ==========================================================================
+   Secciones siguientes (actos 3 y 4: pendientes)
+   ========================================================================== */
+
+.seccion {
+  padding-block: clamp(5rem, 14vh, 9rem);
+  border-top: 1px solid var(--linea);
+}
+
+.seccion-etiqueta {
+  margin: 0 0 1.25rem;
+}
+
+.pendiente {
+  display: inline-block;
+  padding: 0.15rem 0.55rem;
+  border: 1px dashed rgb(255 181 71 / 0.6);
+  border-radius: 0.3rem;
+  color: var(--ambar);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.seccion-titulo {
+  margin: 0 0 1.25rem;
+  font-family: var(--titulos);
+  font-size: clamp(2.75rem, 7vw, 5.5rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.seccion-texto {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--tinta-2);
+  font-size: 1.0625rem;
+}
+
+.seccion-contacto {
+  background: radial-gradient(60% 80% at 0% 100%, rgb(255 181 71 / 0.08), transparent 70%);
+}
+
+.pie {
+  padding-block: 2rem;
+  border-top: 1px solid var(--linea);
+  color: var(--tenue);
+  font-size: 0.8125rem;
+}
+
+.pie-dentro {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 2rem;
+}
+
+.pie p {
+  margin: 0;
+}
+
+/* ==========================================================================
+   Movimiento reducido: nada se mueve solo
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

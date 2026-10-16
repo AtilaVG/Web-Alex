@@ -1,0 +1,157 @@
+---
+/**
+ * Actos 1 y 2: una sola sección fija (sticky) con dos capas.
+ *
+ * - Capa de vídeo (acto 1): póster <img> + <canvas> que recorre los
+ *   fotogramas del vídeo según el scroll y termina en el negro de la pantalla.
+ * - Capa de portada (acto 2): la portada real, en HTML desde el principio.
+ *   La animación solo la revela: cursor → nombre tecleado → rejilla → cajas
+ *   del boceto → tipografía → color → fotos.
+ *
+ * Sin JS o con «reducir movimiento» no hay sección fija: se ve la imagen
+ * fija y, debajo, la portada ya montada.
+ */
+import { Picture, getImage } from 'astro:assets';
+import keyframeA from '../assets/keyframe-a.jpg';
+import { perfil } from '../config/perfil';
+import { secuencias, mediaMovil, nombreFotograma, foco } from '../config/intro';
+import { url } from '../lib/url';
+
+const anchosPoster = [960, 1600];
+const posterFijo = await Promise.all(
+  anchosPoster.map((width) => getImage({ src: keyframeA, width, format: 'webp', quality: 72 })),
+);
+const srcsetFijo = posterFijo.map((img, i) => `${img.src} ${anchosPoster[i]}w`).join(', ');
+
+const esc = secuencias.escritorio;
+const mov = secuencias.movil;
+const letras = [...perfil.nombre].map((l) => (l === ' ' ? ' ' : l));
+
+const altEscena =
+  'Portátil abierto con la pantalla apagada sobre un escritorio de madera, de noche, iluminado por una lámpara de luz ámbar';
+const fases = [
+  'esperando',
+  'escribiendo el nombre',
+  'rejilla de 12 columnas',
+  'boceto: cajas',
+  'tipografía: Geist Mono → Instrument Serif',
+  'color: ámbar',
+  'fotos',
+  '✓ portada lista',
+];
+---
+
+<section class="intro" id="arriba" data-intro aria-labelledby="titulo" style={`--foco: ${foco}`}>
+  <div class="escena" data-escena>
+    <!-- Acto 1 -->
+    <div class="capa-video" data-capa-video>
+      <picture class="poster">
+        <source media="(prefers-reduced-motion: reduce)" srcset={srcsetFijo} sizes="100vw" type="image/webp" />
+        <source
+          media={mediaMovil}
+          srcset={url(`${mov.carpeta}/${nombreFotograma(1)}`)}
+          width={mov.ancho}
+          height={mov.alto}
+        />
+        <img
+          src={url(`${esc.carpeta}/${nombreFotograma(1)}`)}
+          width={esc.ancho}
+          height={esc.alto}
+          alt={altEscena}
+          fetchpriority="high"
+        />
+      </picture>
+      <canvas
+        class="lienzo"
+        aria-hidden="true"
+        data-lienzo
+        data-escritorio={url(esc.carpeta)}
+        data-escritorio-total={esc.total}
+        data-escritorio-ancho={esc.ancho}
+        data-escritorio-alto={esc.alto}
+        data-movil={url(mov.carpeta)}
+        data-movil-total={mov.total}
+        data-movil-ancho={mov.ancho}
+        data-movil-alto={mov.alto}
+        data-media-movil={mediaMovil}></canvas>
+      <p class="aviso-ia" data-aviso-ia>
+        <span class="aviso-ia-punto" aria-hidden="true"></span>
+        <span class="solo-anima">Vídeo generado con IA</span>
+        <span class="solo-fijo">Imagen generada con IA</span>
+      </p>
+      <p class="desliza" aria-hidden="true" data-desliza>
+        <span class="desliza-texto">Desliza para entrar</span>
+        <span class="desliza-linea"></span>
+      </p>
+    </div>
+
+    <!-- Acto 2 -->
+    <div class="capa-portada" id="portada" data-portada tabindex="-1">
+      <div class="rejilla contenedor" aria-hidden="true" data-rejilla>
+        {Array.from({ length: 12 }, () => <span class="rejilla-col"></span>)}
+      </div>
+      <div class="luz" aria-hidden="true" data-luz></div>
+
+      <div class="portada contenedor">
+        <div class="titular">
+          <p class="antetitulo wf" data-wf="p" data-caja><span class="wf-txt">{perfil.antetitulo}</span></p>
+          <div class="nombre-caja">
+            <h1 id="titulo" class="nombre" tabindex="-1" data-nombre>
+              {perfil.nombre}<span class="nombre-caret" aria-hidden="true" data-caret></span>
+            </h1>
+            <p class="tecleado" aria-hidden="true" data-tecleado style={`--n: ${letras.length}`}>
+              {letras.map((l, i) => <span class="letra" style={`--i: ${i}`}>{l}</span>)}<span class="cursor" data-cursor></span>
+            </p>
+          </div>
+        </div>
+
+        <p class="entradilla wf wf-lineas" data-wf="p" data-caja><span class="wf-txt">{perfil.frase}</span></p>
+
+        <div class="acciones">
+          <a class="boton boton-principal wf" data-wf="a" data-caja href="#proyectos"><span class="wf-txt">Proyectos</span></a>
+          <a class="boton boton-secundario wf" data-wf="a" data-caja href="#contacto"><span class="wf-txt">Contacto</span></a>
+        </div>
+
+        <figure class="foto">
+          <div class="foto-caja wf wf-imagen" data-wf="img" data-caja>
+            <div class="foto-marco" data-foto>
+              <Picture
+                src={keyframeA}
+                formats={['avif', 'webp']}
+                widths={[480, 800, 1200]}
+                sizes="(min-width: 900px) 32vw, 92vw"
+                alt="Una lámpara de escritorio ámbar ilumina un portátil abierto en un estudio a oscuras"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+              />
+            </div>
+          </div>
+          <figcaption>Imagen generada con IA</figcaption>
+        </figure>
+
+        <ul class="servicios" aria-label="Qué hago">
+          {
+            perfil.servicios.map((s, i) => (
+              <li class="servicio wf wf-lineas" data-wf="li" data-caja>
+                <span class="wf-txt">
+                  <span class="servicio-num" aria-hidden="true">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <strong>{s.titulo}</strong>
+                  <span class="servicio-texto">{s.texto}</span>
+                </span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="obra" aria-hidden="true" data-obra>
+        <span class="obra-prompt">build</span>
+        <span class="obra-fase" data-obra-fase data-fases={JSON.stringify(fases)}>{fases[0]}</span>
+        <span class="obra-barra"><span data-obra-barra></span></span>
+      </div>
+    </div>
+  </div>
+</section>

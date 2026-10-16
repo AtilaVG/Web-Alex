@@ -1,0 +1,68 @@
+name: Publicar en GitHub Pages
+
+# Comprueba y compila la web en cada push y pull request, y la publica en
+# GitHub Pages solo desde la rama principal del repositorio.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ASTRO_TELEMETRY_DISABLED: 1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      # Da la URL y la ruta base reales de Pages (sirve también con dominio propio).
+      # Si Pages aún no está activado, el build sigue con valores por defecto.
+      - name: Configurar GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        continue-on-error: true
+
+      - run: npm ci
+
+      - name: Comprobar tipos
+        run: npm run check
+
+      - name: Compilar
+        run: npm run build
+        env:
+          # Con dominio propio o web de usuario, base_path viene vacío (raíz): por eso se
+          # mira si el paso salió bien y no si el valor está vacío.
+          SITE_URL: ${{ steps.pages.outcome == 'success' && steps.pages.outputs.origin || format('https://{0}.github.io', github.repository_owner) }}
+          BASE_PATH: ${{ steps.pages.outcome == 'success' && format('{0}/', steps.pages.outputs.base_path) || format('/{0}/', github.event.repository.name) }}
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4
